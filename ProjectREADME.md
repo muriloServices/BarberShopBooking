@@ -44,14 +44,16 @@ The current exported record has Sunday and Monday in `closedDays`.
 
 ### `BookableResource`
 
-The export contains `name` and `BusinessId` on all three resources. `type` and
-`active` are not present in these exported records.
+The export contains `name`, `BusinessId`, and a legacy `emailResource` field
+on all three resources. The current application does not use that field.
+`type` and `active` are not present in these exported records.
 
 ```ts
 type BookableResource = {
   id: string; // Firestore document ID
   name: string;
   BusinessId?: string;
+  // The export also has a legacy emailResource field, unused by the app.
   // `type` and `active` are not currently present in the export.
 };
 ```
@@ -60,9 +62,10 @@ The app defaults missing `type` to `BARBER` and missing `active` to `true`.
 
 ### `Booking`
 
-The exported booking has `resourceId`, `durationMinutes`, `BusinessId`, and
-`customerName`, but those values are empty strings in the current sample. It
-does not contain `startAt` or `endAt`.
+The latest exported booking contains `resourceId`, `durationMinutes`,
+`BusinessId`, `customerName`, `customerPhone`, and `customerEmail`; all six
+values are empty strings in the sample. The booking flow adds `startAt` and
+`endAt` to represent its selected one-hour appointment.
 
 ```ts
 type Booking = {
@@ -71,13 +74,17 @@ type Booking = {
   durationMinutes: string | number;
   BusinessId?: string;
   customerName: string;
-  // startAt, endAt, status, and contact fields are absent from this sample.
+  customerPhone: string;
+  customerEmail: string;
+  startAt: string; // written by the booking flow
+  endAt: string; // written by the booking flow
 };
 ```
 
-This sample is not sufficient to represent a schedulable reservation. Populate
-valid time fields before relying on the backoffice calendar or using bookings
-to block customer-facing slots.
+There is no `status` field. A booking is created immediately when a slot is
+selected, and deleting the booking frees that slot. The sample's customer
+fields are empty; new bookings require customer details and canonical UTC
+`startAt`/`endAt` timestamps.
 
 ### `AvailabilityException`
 
@@ -96,17 +103,17 @@ type AvailabilityException = {
 
 The application expects a usable resource ID and canonical UTC ISO 8601
 timestamps for interval checks; empty values do not describe a valid block.
-The rules require the four exception fields above and permit an optional
-`BusinessId`. If supplied, it must identify an existing `BusinessShop` and
-match the referenced resource's `BusinessId`. Existing exported records may
-retain this field; the current app creates exceptions without it.
+The rules permit an optional `BusinessId` for compatibility with existing
+documents; new backoffice-created exceptions include it and match the
+referenced resource's business.
 
-The checked-in rules allow public reads of shop, hours, resources, and
-exceptions for the customer availability UI. Writes to these collections are
-admin-only. Booking reads and writes are admin-only because customer booking
-submission is not enabled yet. These rules do not make incomplete records
-valid; fill in real business hours and exception intervals before relying on
-availability behavior.
+The checked-in rules allow public reads of shop, hours, resources, exceptions,
+and bookings so the prototype can check occupied times and submit bookings.
+Booking creation is public but restricted to the expected fields and a
+deterministic resource/time document ID; updates and deletes are admin-only.
+Public booking reads also expose customer contact details, so this ruleset is
+for mock/prototype data only and must be replaced with a trusted availability
+endpoint before storing real customer data.
 
 ## Availability Rules
 
@@ -114,7 +121,7 @@ A time slot can be booked only when:
 
 1. It falls within `BusinessHours`.
 2. It does not overlap with an availability exception.
-3. It does not overlap with another active booking for the same resource.
+3. It does not overlap with another booking for the same resource.
 4. The resource is bookable and the requested booking duration is valid.
 
 Overlapping bookings must be prevented by server-side validation, not solely by frontend checks.
@@ -134,8 +141,23 @@ Overlapping bookings must be prevented by server-side validation, not solely by 
   consistently formatted ISO 8601 datetimes with an explicit timezone.
 - Define the business's timezone when calculating availability.
 - Keep `endAt` consistent with `startAt` and `durationMinutes`.
-- Treat cancelled bookings as non-blocking.
 - Configure and test Firestore Security Rules to prevent unauthorized access and modifications.
+
+### Firestore service CRUD
+
+Typed collection CRUD is implemented in `src/services/`:
+
+- `businessShopService.ts` — `BusinessShop`
+- `businessHoursService.ts` — `BusinessHours`
+- `resourceService.ts` — `BookableResource`
+- `bookingService.ts` — `Booking`
+- `availabilityExceptionService.ts` — `AvailabilityException`
+
+`firestoreCrud.ts` shares the low-level Firestore document operations. The
+services validate input shape and dates; Firestore Security Rules remain the
+authorization boundary. Under the checked-in prototype rules, booking
+creation is public, while booking updates/deletes and other collection writes
+are admin-only.
 
 ## Firestore Security Rules
 
@@ -197,32 +219,32 @@ is not used for this exception-only barber selection check.
 
 The browser needs read access under the deployed Firestore Security Rules.
 The time list shows 09:00 through 19:00 one-hour start times (the last slot
-ends at 20:00), and disables hours blocked by matching exceptions. Existing
-bookings are not queried because that would expose customer details to the
-browser. Times are therefore unconfirmed requests, and the contact form is
-presentational only: it does not save customer information or create a
-booking. Do not grant unrestricted Firestore access; use a trusted backend and
-restrictive rules before enabling booking submission.
+ends at 20:00), and disables hours blocked by exceptions or existing bookings.
+Selecting a slot submits the booking immediately. The document ID is derived
+from the barber and start time, preventing a second public create for that
+same slot. The current prototype rules expose booking contact fields to
+unauthenticated readers; do not use them with real customer data.
 
 ## Staff backoffice
 
-Open `/backoffice` and sign in with an existing Firebase Authentication
+The Simple Booking welcome page is at `/`. Customers can book at
+`/ringbarbershop`; staff can open `/ringbarbershop/admin` and sign in with an
+existing Firebase Authentication
 email/password account. The account must have the Firebase custom claim
 `admin: true`; authenticated users without that claim are denied. Assign this
 claim only from a trusted Admin SDK environment after verifying the staff
-identity, never from browser code. Deploy the restrictive rules in
-`firestore.rules` (or apply the same rules in Firebase Console): they permit
-public reads only for barber resources and exception intervals, admin-only
-access to reservations, and admin-only exception management. Avoid the prior
-catch-all public read/write rule: reservations contain customer contact
-information.
+identity, never from browser code. Booking reads are public in the current
+prototype rules to support availability checks; this exposes customer contact
+information. Replace this with a trusted availability endpoint before launch.
 
-The backoffice displays `Booking` records using the documented `resourceId`,
-`startAt`, `endAt`, `status`, and available customer fields. It creates and
-removes `AvailabilityException` records using only the existing four string
-fields: `resourceId`, `startAt`, `endAt`, and `reason`. Date/time inputs are
-interpreted in the configured business timezone and stored as canonical UTC
-ISO strings.
+The backoffice has three tabs: **Reservations** displays `Booking` records
+using `resourceId`, `startAt`, `endAt`, and available customer fields;
+**Barbers** lists existing barbers and creates `BookableResource` records
+linked to a business; **Block slots** creates and removes
+`AvailabilityException` records using `resourceId`, `startAt`, `endAt`,
+`reason`, and the resource's `BusinessId`. Date/time inputs are interpreted in
+the configured business timezone and stored as canonical UTC ISO strings.
+Booking confirmation emails are not currently enabled.
 
 Create staff accounts in Firebase Authentication, then grant the admin claim
 from a trusted Admin SDK environment (never from client code). For example,

@@ -100,13 +100,13 @@ export function BookingPage() {
   return (
     <main className="booking-shell">
       <header className="site-header">
-        <a className="brand" href="/" aria-label="Barber studio booking home">
-          <span className="brand-mark" aria-hidden="true">B</span>
-          <span>BARBER<span className="brand-subtitle">BOOKING STUDIO</span></span>
+        <a className="brand" href="/" aria-label="Simple Booking home">
+          <span className="brand-mark" aria-hidden="true">S</span>
+          <span>SIMPLE<span className="brand-subtitle">BOOKING</span></span>
         </a>
         <div className="header-actions">
           <span className="header-note">A better cut starts here</span>
-          <a className="text-button" href="/backoffice">Staff</a>
+          <a className="text-button" href="/ringbarbershop/admin">Staff</a>
         </div>
       </header>
 
@@ -182,6 +182,9 @@ export function BookingPage() {
           <CustomerDetailsForm
             date={selectedDate}
             barberName={chosenBarber.name}
+            resourceId={chosenBarber.id}
+            businessId={chosenBarber.BusinessId}
+            timeZone={timeZone}
             slot={selectedSlot}
             onBack={() => setFlowStep('time')}
           />
@@ -189,7 +192,7 @@ export function BookingPage() {
       </div>
 
       <footer className="site-footer">
-        <span>Barber Studio</span>
+        <span>Simple Booking · Ring Barber Shop</span>
         <span>Good hair days, made simple.</span>
       </footer>
     </main>
