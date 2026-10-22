@@ -1,104 +1,140 @@
-# Booking System — Data Model
+# Firestore Data Model
 
 ## Overview
 
-The booking system uses Firebase Firestore and consists of four core collections:
+The current Firestore export contains:
 
-- `BookableResource` — Resources that can be booked, such as barbers or padel courts.
-- `Availability` — Recurring weekly availability for each resource.
-- `Booking` — Customer reservations.
-- `AvailabilityException` — Holidays, time off, and temporary blocks.
+- `BusinessShop` — the shop name.
+- `BusinessHours` — opening/closing times and closed weekdays.
+- `BookableResource` — bookable barbers.
+- `Booking` — reservation records.
+- `AvailabilityException` — resource unavailability blocks.
 
-## 1. BookableResource
+These descriptions reflect fields present in the export, not a guarantee that
+every document contains every field. Some documents are incomplete or
+inconsistent.
 
-Represents a resource that can be booked.
+## Collections
+
+### `BusinessShop`
+
+The export contains a document with a `name` (`Ring Barber Shop`).
+
+```ts
+type BusinessShop = {
+  name: string;
+};
+```
+
+### `BusinessHours`
+
+The export contains closed weekdays (`0` = Sunday through `6` = Saturday),
+opening/closing times, and a `businessShopId`.
+
+```ts
+type BusinessHours = {
+  closedDays: number[];
+  openingTime: string; // e.g. "09:00"
+  closingTime: string; // e.g. "20:00"
+  businessShopId: string;
+};
+```
+
+The current exported record has Sunday and Monday in `closedDays`.
+
+### `BookableResource`
+
+The export contains `name` and `BusinessId` on all three resources. `type` and
+`active` are not present in these exported records.
 
 ```ts
 type BookableResource = {
-  id: string;
+  id: string; // Firestore document ID
   name: string;
-  type: "BARBER" | "PADEL_COURT";
-  active: boolean;
+  BusinessId?: string;
+  // `type` and `active` are not currently present in the export.
 };
 ```
 
-## 2. Availability
+The app defaults missing `type` to `BARBER` and missing `active` to `true`.
 
-Defines the recurring weekly schedule of a resource.
+### `Booking`
 
-```ts
-type Availability = {
-  id: string;
-  resourceId: string;
-  dayOfWeek: number; // 0 = Sunday, 6 = Saturday
-  startTime: string; // "09:00"
-  endTime: string;   // "18:00"
-};
-```
-
-Each document represents an availability interval for a specific day of the week.
-
-## 3. Booking
-
-Represents a customer's reservation.
+The exported booking has `resourceId`, `durationMinutes`, `BusinessId`, and
+`customerName`, but those values are empty strings in the current sample. It
+does not contain `startAt` or `endAt`.
 
 ```ts
 type Booking = {
-  id: string;
+  id: string; // Firestore document ID
   resourceId: string;
-  customerId: string;
-  startAt: string; // ISO 8601 datetime
-  endAt: string;   // ISO 8601 datetime
-  durationMinutes: number;
-  status: "CONFIRMED" | "CANCELLED";
-  createdAt: string;
+  durationMinutes: string | number;
+  BusinessId?: string;
+  customerName: string;
+  // startAt, endAt, status, and contact fields are absent from this sample.
 };
 ```
 
-The reservation duration depends on the booking type or selected service. For example, a haircut may take 60 minutes, while a padel court reservation may last 90 minutes.
+This sample is not sufficient to represent a schedulable reservation. Populate
+valid time fields before relying on the backoffice calendar or using bookings
+to block customer-facing slots.
 
-## 4. AvailabilityException
+### `AvailabilityException`
 
-Represents exceptional periods when a resource is unavailable.
+The exported exception contains the four expected fields plus `BusinessId`.
+The four expected fields are empty strings in the current sample.
 
 ```ts
 type AvailabilityException = {
-  resourceId: string;
   startAt: string;
   endAt: string;
   reason: string;
+  resourceId: string;
+  BusinessId?: string;
 };
 ```
 
-Examples include holidays, personal time off, and temporary booking blocks.
+The application expects a usable resource ID and canonical UTC ISO 8601
+timestamps for interval checks; empty values do not describe a valid block.
+The rules require the four exception fields above and permit an optional
+`BusinessId`. If supplied, it must identify an existing `BusinessShop` and
+match the referenced resource's `BusinessId`. Existing exported records may
+retain this field; the current app creates exceptions without it.
 
-Firestore rules require exactly these four string fields.
+The checked-in rules allow public reads of shop, hours, resources, and
+exceptions for the customer availability UI. Writes to these collections are
+admin-only. Booking reads and writes are admin-only because customer booking
+submission is not enabled yet. These rules do not make incomplete records
+valid; fill in real business hours and exception intervals before relying on
+availability behavior.
 
 ## Availability Rules
 
 A time slot can be booked only when:
 
-1. It falls within the resource's recurring availability.
+1. It falls within `BusinessHours`.
 2. It does not overlap with an availability exception.
 3. It does not overlap with another active booking for the same resource.
-4. The resource is active and the requested booking duration is valid.
+4. The resource is bookable and the requested booking duration is valid.
 
 Overlapping bookings must be prevented by server-side validation, not solely by frontend checks.
 
 ## Relationships
 
-- `Availability.resourceId` references `BookableResource.id`.
+- `BusinessHours.businessShopId` references `BusinessShop.id`.
 - `Booking.resourceId` references `BookableResource.id`.
 - `AvailabilityException.resourceId` references `BookableResource.id`.
-- `Booking.customerId` identifies the customer who made the reservation.
+- `BusinessId` on resources, bookings, and exceptions refers to the
+  `BusinessShop` document. `BusinessHours` refers to that same document using
+  the differently named `businessShopId` field.
 
 ## Implementation Notes
 
-- Store dates using Firestore timestamps or consistently formatted ISO 8601 datetimes with an explicit timezone.
+- Store reservation and exception dates using Firestore timestamps or
+  consistently formatted ISO 8601 datetimes with an explicit timezone.
 - Define the business's timezone when calculating availability.
 - Keep `endAt` consistent with `startAt` and `durationMinutes`.
 - Treat cancelled bookings as non-blocking.
-- Consider adding a `Service` collection if different services have different durations or prices.
 - Configure and test Firestore Security Rules to prevent unauthorized access and modifications.
 
 ## Firestore Security Rules
