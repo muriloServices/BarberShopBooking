@@ -1,6 +1,7 @@
 export type BookableResource = {
   id: string
   name: string
+  BusinessId?: string
   type: string
   active: boolean
 }
@@ -8,6 +9,7 @@ export type BookableResource = {
 export type Barber = {
   id: string
   name: string
+  BusinessId?: string
 }
 
 export type DateAvailability = {

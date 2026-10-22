@@ -1,9 +1,14 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
+import { createConfirmedBooking, validateCustomerDetails } from '../services/bookingService'
+import { getTimeSlotAvailability } from '../services/timeSlotService'
 import type { TimeSlot } from '../types/booking'
 
 type CustomerDetailsFormProps = {
   date: string
   barberName: string
+  resourceId: string
+  businessId?: string
+  timeZone: string
   slot: TimeSlot
   onBack: () => void
 }
@@ -22,11 +27,59 @@ function formatDate(date: string) {
 export function CustomerDetailsForm({
   date,
   barberName,
+  resourceId,
+  businessId,
+  timeZone,
   slot,
   onBack,
 }: CustomerDetailsFormProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [bookingId, setBookingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setError(null)
+    if (!businessId) {
+      setError('This barber is not linked to a business and cannot accept bookings yet.')
+      return
+    }
+    const form = new FormData(event.currentTarget)
+    const customerName = String(form.get('name') ?? '')
+    const customerEmail = String(form.get('email') ?? '')
+    const customerPhone = String(form.get('phone') ?? '')
+    try {
+      setIsSubmitting(true)
+      validateCustomerDetails(customerName, customerEmail, customerPhone)
+      const availability = await getTimeSlotAvailability(date, resourceId, timeZone)
+      if (availability.status !== 'available') {
+        throw new Error(availability.message || 'Could not check this appointment time.')
+      }
+      if (!availability.slots.some((candidate) => candidate.startAt === slot.startAt && candidate.available)) {
+        throw new Error('That time is no longer available. Please choose another time.')
+      }
+      const id = await createConfirmedBooking({
+        resourceId,
+        BusinessId: businessId,
+        customerName,
+        customerEmail,
+        customerPhone,
+        startAt: slot.startAt,
+        endAt: slot.endAt,
+      })
+      setBookingId(id)
+    } catch (submitError) {
+      const code = typeof submitError === 'object' && submitError !== null && 'code' in submitError
+        ? submitError.code
+        : undefined
+      setError(code === 'already-exists'
+        ? 'That time has just been booked. Please choose another time.'
+        : code === 'permission-denied'
+          ? 'Firestore denied this booking. Confirm the deployed rules allow public Booking reads and creates.'
+          : submitError instanceof Error ? submitError.message : 'Could not create the booking.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -45,6 +98,12 @@ export function CustomerDetailsForm({
         <h2 id="customer-title">Your contact details</h2>
         <p className="availability-note">{barberName} · 1-hour appointment</p>
 
+        {bookingId ? (
+          <div className="success-message" role="status">
+            <h3>Booking confirmed</h3>
+            <p>Your booking reference is {bookingId}.</p>
+          </div>
+        ) : (
         <form className="customer-form" onSubmit={handleSubmit}>
           <label>
             Full name
@@ -56,15 +115,22 @@ export function CustomerDetailsForm({
           </label>
           <label>
             Phone number
-            <input name="phone" type="tel" autoComplete="tel" required maxLength={40} />
+            <input
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              required
+              maxLength={40}
+              inputMode="tel"
+              placeholder="+351 912 345 678"
+            />
           </label>
-          <p className="form-error" role="status">
-            Booking submission is disabled until secure Firestore rules and a trusted booking backend are configured.
-          </p>
-          <button className="submit-booking" type="submit" disabled>
-            Booking request unavailable
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="submit-booking" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Booking…' : 'Confirm booking'}
           </button>
         </form>
+        )}
       </div>
     </section>
   )
