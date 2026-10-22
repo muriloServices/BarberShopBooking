@@ -1,12 +1,18 @@
 import { BookingPage } from './pages/BookingPage'
 import { BackOfficePage } from './pages/BackOfficePage'
+import { WelcomePage } from './pages/WelcomePage'
 import './App.css'
 
 function App() {
-  if (window.location.pathname === '/backoffice') {
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+
+  if (pathname === '/ringbarbershop/admin') {
     return <BackOfficePage />
   }
-  return <BookingPage />
+  if (pathname === '/ringbarbershop') {
+    return <BookingPage />
+  }
+  return <WelcomePage />
 }
 
 export default App

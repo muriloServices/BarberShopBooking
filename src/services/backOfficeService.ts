@@ -1,13 +1,12 @@
+import { getBookings } from './bookingService'
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-} from 'firebase/firestore'
-import { firestore } from '../lib/firebase'
-import { getBookableResources } from './resourceService'
+  createAvailabilityException,
+  deleteAvailabilityException,
+  getAvailabilityExceptions,
+} from './availabilityExceptionService'
+import { getBookableResource, getBookableResources } from './resourceService'
 import { businessDateTimeToEpoch } from './dateTimeService'
+import { getBusinessShops } from './businessShopService'
 
 export type ReservationRecord = {
   id: string
@@ -17,7 +16,6 @@ export type ReservationRecord = {
   customerPhone: string
   startAt: string
   endAt: string
-  status: string
 }
 
 export type UnavailabilityRecord = {
@@ -46,7 +44,6 @@ function toReservation(id: string, value: unknown): ReservationRecord {
     customerPhone: stringField(data, 'customerPhone', stringField(data, 'phone')),
     startAt: stringField(data, 'startAt'),
     endAt: stringField(data, 'endAt'),
-    status: stringField(data, 'status', 'UNKNOWN'),
   }
 }
 
@@ -62,18 +59,20 @@ function toUnavailability(id: string, value: unknown): UnavailabilityRecord {
 }
 
 export async function getBackOfficeData() {
-  const [bookingSnapshot, exceptionSnapshot, resourceResult] = await Promise.all([
-    getDocs(collection(firestore, 'Booking')),
-    getDocs(collection(firestore, 'AvailabilityException')),
+  const [bookings, unavailability, resourceResult, businesses] = await Promise.all([
+    getBookings(),
+    getAvailabilityExceptions(),
     getBookableResources(),
+    getBusinessShops(),
   ])
 
   return {
-    reservations: bookingSnapshot.docs
-      .map((document) => toReservation(document.id, document.data()))
+    reservations: bookings
+      .map((booking) => toReservation(booking.id, booking))
       .sort((left, right) => right.startAt.localeCompare(left.startAt)),
-    unavailability: exceptionSnapshot.docs.map((document) => toUnavailability(document.id, document.data())),
+    unavailability: unavailability.map((record) => toUnavailability(record.id, record)),
     resources: resourceResult.resources.filter((resource) => resource.type === 'BARBER' && resource.active),
+    businesses,
   }
 }
 
@@ -86,19 +85,24 @@ export async function createUnavailability(input: {
   reason: string
   timeZone: string
 }) {
+  const resource = await getBookableResource(input.resourceId)
+  if (!resource?.BusinessId) {
+    throw new Error('The selected barber must be linked to a business before adding unavailability.')
+  }
   const start = businessDateTimeToEpoch(input.startDate, input.startTime, input.timeZone)
   const end = businessDateTimeToEpoch(input.endDate, input.endTime, input.timeZone)
   if (start === null || end === null || end <= start) {
     throw new Error('Enter a valid start and end time. The end must be after the start; daylight-saving transition times are not accepted.')
   }
-  await addDoc(collection(firestore, 'AvailabilityException'), {
+  await createAvailabilityException({
     startAt: new Date(start).toISOString(),
     endAt: new Date(end).toISOString(),
     resourceId: input.resourceId,
     reason: input.reason.trim(),
+    BusinessId: resource.BusinessId,
   })
 }
 
 export async function deleteUnavailability(id: string) {
-  await deleteDoc(doc(firestore, 'AvailabilityException', id))
+  await deleteAvailabilityException(id)
 }

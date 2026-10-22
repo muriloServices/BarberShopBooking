@@ -138,7 +138,11 @@ export async function getDateAvailability(date: string, timeZone?: string): Prom
         )
       )
       if (hasAnyAvailableTime) {
-        available.push({ id: resource.id, name: resource.name })
+        available.push({
+          id: resource.id,
+          name: resource.name,
+          ...(resource.BusinessId ? { BusinessId: resource.BusinessId } : {}),
+        })
       }
     }
 
