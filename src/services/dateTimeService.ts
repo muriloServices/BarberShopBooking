@@ -32,13 +32,21 @@ function sameLocalDateTime(
 }
 
 export function localTimeToEpoch(date: string, hour: number, timeZone: string): number | null {
+  return businessDateTimeToEpoch(date, `${String(hour).padStart(2, '0')}:00`, timeZone)
+}
+
+export function businessDateTimeToEpoch(date: string, time: string, timeZone: string): number | null {
   const { year, month, day } = dateParts(date)
-  const target = { year, month, day, hour, minute: 0 }
-  const localAsUtc = Date.UTC(year, month - 1, day, hour)
+  const timeMatch = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time)
+  if (!timeMatch) return null
+  const hour = Number(timeMatch[1])
+  const minute = Number(timeMatch[2])
+  const target = { year, month, day, hour, minute }
+  const localAsUtc = Date.UTC(year, month - 1, day, hour, minute)
   const candidates = new Set<number>()
 
-  for (let offset = -14; offset <= 14; offset += 1) {
-    const candidate = localAsUtc + offset * 60 * 60 * 1000
+  for (let offset = -14 * 60; offset <= 14 * 60; offset += 15) {
+    const candidate = localAsUtc + offset * 60 * 1000
     try {
       if (sameLocalDateTime(partsAt(candidate, timeZone), target)) candidates.add(candidate)
     } catch {

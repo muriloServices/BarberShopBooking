@@ -104,7 +104,10 @@ export function BookingPage() {
           <span className="brand-mark" aria-hidden="true">B</span>
           <span>BARBER<span className="brand-subtitle">BOOKING STUDIO</span></span>
         </a>
-        <span className="header-note">A better cut starts here</span>
+        <div className="header-actions">
+          <span className="header-note">A better cut starts here</span>
+          <a className="text-button" href="/backoffice">Staff</a>
+        </div>
       </header>
 
       <div className="booking-content">

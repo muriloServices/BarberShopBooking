@@ -117,7 +117,7 @@ The UI keeps presentation and Firestore access in separate layers:
 
 The collection names and fields are based on this document; the app does not
 create substitute resource or exception data.
-Configure
+
 The default business timezone is `Europe/Lisbon`. Override it with
 `VITE_BUSINESS_TIME_ZONE` in a root-level `.env.local` file (see
 `.env.example`) and restart the Vite dev server. Only a valid exception whose
@@ -152,3 +152,40 @@ browser. Times are therefore unconfirmed requests, and the contact form is
 presentational only: it does not save customer information or create a
 booking. Do not grant unrestricted Firestore access; use a trusted backend and
 restrictive rules before enabling booking submission.
+
+## Staff backoffice
+
+Open `/backoffice` and sign in with an existing Firebase Authentication
+email/password account. The account must have the Firebase custom claim
+`admin: true`; authenticated users without that claim are denied. Assign this
+claim only from a trusted Admin SDK environment after verifying the staff
+identity, never from browser code. Deploy the restrictive rules in
+`firestore.rules` (or apply the same rules in Firebase Console): they permit
+public reads only for barber resources and exception intervals, admin-only
+access to reservations, and admin-only exception management. Avoid the prior
+catch-all public read/write rule: reservations contain customer contact
+information.
+
+The backoffice displays `Booking` records using the documented `resourceId`,
+`startAt`, `endAt`, `status`, and available customer fields. It creates and
+removes `AvailabilityException` records using only the existing four string
+fields: `resourceId`, `startAt`, `endAt`, and `reason`. Date/time inputs are
+interpreted in the configured business timezone and stored as canonical UTC
+ISO strings.
+
+Create staff accounts in Firebase Authentication, then grant the admin claim
+from a trusted Admin SDK environment (never from client code). For example,
+after initializing the Admin SDK and verifying the staff UID:
+
+```ts
+const user = await getAuth().getUser(uid)
+await getAuth().setCustomUserClaims(uid, {
+  ...user.customClaims,
+  admin: true,
+})
+```
+
+The staff member must sign in again after claims change. Deploy the rules from
+`firestore.rules` in Firestore Console or with the Firebase CLI before opening
+the backoffice. Do not restore public `read, write: if true` rules: reservation
+documents contain private customer contact information.
