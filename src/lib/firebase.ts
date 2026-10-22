@@ -1,4 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 // Keep the existing Firebase project configuration; no new backend is assumed.
@@ -15,3 +16,4 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 export const firestore = getFirestore(app)
+export const auth = getAuth(app)

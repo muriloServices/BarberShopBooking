@@ -62,6 +62,12 @@
   font-style: italic;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
 .booking-content {
   width: min(100% - 40px, 650px);
   margin: 0 auto;
@@ -599,6 +605,126 @@
   font-size: 13px;
 }
 
+.backoffice-shell {
+  min-height: 100svh;
+  background: #f8f7f4;
+}
+
+.backoffice-content {
+  width: min(100% - 40px, 980px);
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+
+.backoffice-content > h1 {
+  margin: 8px 0 24px;
+  color: #292c26;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 38px;
+  font-weight: 400;
+}
+
+.backoffice-card {
+  margin: 18px 0;
+  padding: 22px;
+  border: 1px solid #e9e6df;
+  background: white;
+}
+
+.backoffice-card > h2 {
+  margin: 0 0 8px;
+  color: #30322c;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.backoffice-card > p {
+  color: #74766e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.backoffice-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  color: #74766e;
+  font-size: 12px;
+}
+
+.backoffice-toolbar > div {
+  display: flex;
+  gap: 8px;
+}
+
+.backoffice-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d9d6ce;
+  background: #fff;
+  color: #373931;
+  cursor: pointer;
+}
+
+.backoffice-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.reservation-list {
+  display: grid;
+}
+
+.reservation-item {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr auto;
+  gap: 15px;
+  padding: 14px 0;
+  border-top: 1px solid #eeece6;
+  color: #696a62;
+  font-size: 12px;
+}
+
+.reservation-item > div {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  overflow-wrap: anywhere;
+}
+
+.reservation-item strong {
+  color: #373931;
+}
+
+.reservation-status {
+  align-self: start;
+  padding: 4px 7px;
+  background: #f4f2ed;
+  color: #696a62;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.block-form select {
+  min-height: 43px;
+  padding: 0 12px;
+  border: 1px solid #d9d6ce;
+  border-radius: 0;
+  background: white;
+  color: #292c26;
+  font: inherit;
+  font-size: 14px;
+}
+
+.success-message {
+  margin: 0;
+  color: #336b43;
+  font-size: 12px;
+}
+
 .site-footer {
   display: flex;
   justify-content: space-between;
@@ -631,6 +757,10 @@
 
   .header-note {
     font-size: 12px;
+  }
+
+  .header-actions {
+    gap: 7px;
   }
 
   .booking-content {
@@ -731,6 +861,29 @@
 
   .time-slot-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .backoffice-content {
+    width: min(100% - 28px, 440px);
+    padding-top: 34px;
+  }
+
+  .backoffice-content > h1 {
+    font-size: 32px;
+  }
+
+  .backoffice-card {
+    padding: 16px;
+  }
+
+  .backoffice-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reservation-item {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
   .site-footer {
