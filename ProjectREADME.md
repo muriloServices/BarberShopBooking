@@ -63,16 +63,16 @@ Represents exceptional periods when a resource is unavailable.
 
 ```ts
 type AvailabilityException = {
-  id: string;
   resourceId: string;
-  startAt: string; // ISO 8601 datetime
-  endAt: string;   // ISO 8601 datetime
-  reason: "HOLIDAY" | "TIME_OFF" | "BLOCKED";
-  createdAt: string;
+  startAt: string;
+  endAt: string;
+  reason: string;
 };
 ```
 
 Examples include holidays, personal time off, and temporary booking blocks.
+
+Firestore rules require exactly these four string fields.
 
 ## Availability Rules
 
@@ -100,6 +100,21 @@ Overlapping bookings must be prevented by server-side validation, not solely by 
 - Treat cancelled bookings as non-blocking.
 - Consider adding a `Service` collection if different services have different durations or prices.
 - Configure and test Firestore Security Rules to prevent unauthorized access and modifications.
+
+## Firestore Security Rules
+
+The Firebase CLI is configured to deploy `firestore.rules` to the default
+project (`barbershopbooking-ff17d`). After installing and authenticating with
+the Firebase CLI, deploy the rules with:
+
+```sh
+firebase deploy --only firestore:rules
+```
+
+This deploys the rules to Firebase; adding or changing the local rules file
+does not update the live project until the command succeeds. Review the rules
+before deploying because deployment replaces the project's active Firestore
+rules.
 
 ## Date-first booking UI integration
 
