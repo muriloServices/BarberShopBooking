@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    match /BookableResource/{resourceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /AvailabilityException/{exceptionId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasAll([
+          'startAt',
+          'endAt',
+          'resourceId',
+          'reason'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'startAt',
+          'endAt',
+          'resourceId',
+          'reason'
+        ])
+        && request.resource.data.startAt is string
+        && request.resource.data.endAt is string
+        && request.resource.data.resourceId is string
+        && request.resource.data.reason is string;
+      allow delete: if isAdmin();
+    }
+
+    match /Booking/{bookingId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
