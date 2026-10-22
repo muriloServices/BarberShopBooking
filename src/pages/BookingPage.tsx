@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { getDownloadURL, ref } from 'firebase/storage'
 import { BarberSelection } from '../components/BarberSelection'
 import { BookingCalendar } from '../components/BookingCalendar'
 import { CustomerDetailsForm } from '../components/CustomerDetailsForm'
 import { TimeSlotSelection } from '../components/TimeSlotSelection'
 import { getDateAvailability } from '../services/availabilityService'
+import { getBusinessShops } from '../services/businessShopService'
+import { getBusinessHoursRecords } from '../services/businessHoursService'
+import { storage } from '../lib/firebase'
 import type { DateAvailability, TimeSlot } from '../types/booking'
 
 function dateKey(year: number, month: number, day: number) {
@@ -45,6 +49,77 @@ export function BookingPage() {
   const canGoBack = visibleMonth.getTime() > Date.UTC(todayYear, todayMonth - 1, 1)
   const [availability, setAvailability] = useState<DateAvailability | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [bookingImageUrl, setBookingImageUrl] = useState<string | null>(null)
+  const [closedDays, setClosedDays] = useState<number[] | null>(null)
+  const [workingDaysError, setWorkingDaysError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadBusinessDetails() {
+      try {
+        const businesses = await getBusinessShops()
+        const routeSlug = window.location.pathname.split('/').filter(Boolean).at(-1)?.toLowerCase() ?? ''
+        const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+        const business = businesses.find((candidate) =>
+          (candidate.slug && normalize(candidate.slug) === normalize(routeSlug)) ||
+          normalize(candidate.name) === normalize(routeSlug),
+        ) ?? (businesses.length === 1 ? businesses[0] : undefined)
+
+        if (!business) {
+          if (!cancelled) {
+            setWorkingDaysError('Could not identify this shop. Date selection is unavailable.')
+          }
+          console.error('Could not identify the business for this booking page.')
+          return
+        }
+
+        if (business.imageUrl) {
+          try {
+            const imageUrl = business.imageUrl.startsWith('gs://')
+              ? await getDownloadURL(ref(storage, business.imageUrl))
+              : business.imageUrl
+            if (!cancelled) setBookingImageUrl(imageUrl)
+          } catch (error) {
+            console.error('Could not load the business booking background image.', error)
+          }
+        } else {
+          console.warn(`BusinessShop/${business.id} has no imageUrl configured.`)
+        }
+
+        try {
+          const hours = await getBusinessHoursRecords()
+          const businessHours = hours.find((record) => record.businessShopId === business.id)
+          if (!businessHours) {
+            if (!cancelled) {
+              setWorkingDaysError(`Business hours are not configured for ${business.name}.`)
+            }
+            console.error(`Business hours are not configured for ${business.name}.`)
+            return
+          }
+          if (!cancelled) {
+            setClosedDays(businessHours.closedDays)
+            setWorkingDaysError(null)
+          }
+        } catch (error) {
+          if (!cancelled) {
+            setWorkingDaysError('Could not load shop working days. Date selection is unavailable.')
+          }
+          console.error('Could not load business working days.', error)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setWorkingDaysError('Could not load shop working days. Date selection is unavailable.')
+        }
+        console.error('Could not load business booking details.', error)
+      }
+    }
+
+    void loadBusinessDetails()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!selectedDate) return
@@ -72,7 +147,11 @@ export function BookingPage() {
   }, [selectedDate, timeZone])
 
   function chooseDate(date: string) {
-    if (date < today) return
+    if (
+      date < today ||
+      closedDays === null ||
+      closedDays.includes(new Date(`${date}T12:00:00.000Z`).getUTCDay())
+    ) return
     setIsLoading(true)
     setAvailability(null)
     setSelectedBarberId(null)
@@ -98,31 +177,15 @@ export function BookingPage() {
         : 4
 
   return (
-    <main className="booking-shell">
-      <header className="site-header">
-        <a className="brand" href="/" aria-label="Simple Booking home">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span>SIMPLE<span className="brand-subtitle">BOOKING</span></span>
-        </a>
-        <div className="header-actions">
-          <span className="header-note">A better cut starts here</span>
-          <a className="text-button" href="/ringbarbershop/admin">Staff</a>
-        </div>
-      </header>
-
-      <div className="booking-content">
-        <div className="intro">
-          <p className="eyebrow">BOOK AN APPOINTMENT</p>
-          <h1>{flowStep === 'date' ? 'Make time for yourself.' : 'Book your appointment.'}</h1>
-          <p className="intro-copy">
-            {flowStep === 'date' && 'First, choose a day that works for you.'}
-            {flowStep === 'barber' && 'Choose a barber for your selected date.'}
-            {flowStep === 'time' && 'Choose an available one-hour appointment.'}
-            {flowStep === 'details' && 'Add your contact details to request the booking.'}
-          </p>
-        </div>
-
-        <nav className="steps" aria-label="Booking progress">
+    <main
+      className="booking-shell"
+      style={bookingImageUrl
+        ? { '--booking-image': `url("${bookingImageUrl}")` } as CSSProperties
+        : undefined}
+    >
+      <div className="booking-panel">
+        <div className="booking-content">
+          <nav className="steps" aria-label="Booking progress">
           {(['Date', 'Barber', 'Time', 'Details'] as const).map((label, index) => {
             const number = index + 1
             const complete = number < currentStep
@@ -144,6 +207,8 @@ export function BookingPage() {
             today={today}
             visibleMonth={visibleMonth}
             canGoBack={canGoBack}
+            closedDays={closedDays}
+            workingDaysError={workingDaysError}
             onChangeMonth={(offset) => {
               setVisibleMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + offset, 1)))
             }}
@@ -189,12 +254,12 @@ export function BookingPage() {
             onBack={() => setFlowStep('time')}
           />
         )}
-      </div>
+        </div>
 
-      <footer className="site-footer">
-        <span>Simple Booking · Ring Barber Shop</span>
-        <span>Good hair days, made simple.</span>
-      </footer>
+        <footer className="site-footer">
+          <span>Simple Booking · Ring Barber Shop</span>
+        </footer>
+      </div>
     </main>
   )
 }

@@ -47,10 +47,7 @@ export function BarberSelection({
       </div>
       <div className="barber-body">
         <p className="section-kicker">STEP 2 OF 3</p>
-        <h2 id="barber-title">Who would you like to see?</h2>
-        <p className="availability-note">
-          Barbers with no blocking exception for this date are shown. This does not confirm an appointment time.
-        </p>
+        <h2 id="barber-title">Which barber would you like to book?</h2>
 
         {isLoading && (
           <div className="status-panel" role="status">

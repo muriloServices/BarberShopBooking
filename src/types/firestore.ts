@@ -1,6 +1,8 @@
 export type BusinessShop = {
   id: string
   name: string
+  slug?: string
+  imageUrl?: string
 }
 
 export type BusinessHours = {
