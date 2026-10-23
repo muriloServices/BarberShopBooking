@@ -108,7 +108,7 @@ export function BookingCalendar({
         {workingDaysError ? (
           <p role="alert">{workingDaysError}</p>
         ) : closedDays === null ? (
-          <p role="status">Loading shop working days…</p>
+          <p role="status">Loading calendar…</p>
         ) : (
           <>
             <span className="legend-dot" aria-hidden="true" />
