@@ -248,6 +248,7 @@ export function BookingPage() {
             date={selectedDate}
             barberName={chosenBarber.name}
             resourceId={chosenBarber.id}
+            resourceEmail={chosenBarber.emailResource}
             businessId={chosenBarber.BusinessId}
             timeZone={timeZone}
             slot={selectedSlot}
