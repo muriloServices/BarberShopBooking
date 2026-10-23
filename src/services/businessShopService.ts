@@ -1,12 +1,8 @@
 import type { BusinessShop } from '../types/firestore'
 import {
   asFirestoreRecord,
-  createRecord,
-  deleteRecord,
-  getRecord,
   listRecords,
   requiredString,
-  updateRecord,
 } from './firestoreCrud'
 
 const COLLECTION = 'BusinessShop'
@@ -14,31 +10,23 @@ const COLLECTION = 'BusinessShop'
 function parseBusinessShop(id: string, value: unknown): BusinessShop {
   const path = `${COLLECTION}/${id}`
   const data = asFirestoreRecord(value, COLLECTION, id)
-  return { id, name: requiredString(data, 'name', path) }
+  const slug = data.slug
+  const imageUrl = data.imageUrl
+  if (slug !== undefined && typeof slug !== 'string') {
+    throw new Error(`${path}.slug must be a string when present.`)
+  }
+  if (imageUrl !== undefined && typeof imageUrl !== 'string') {
+    throw new Error(`${path}.imageUrl must be a string when present.`)
+  }
+  return {
+    id,
+    name: requiredString(data, 'name', path),
+    ...(typeof slug === 'string' ? { slug } : {}),
+    ...(typeof imageUrl === 'string' ? { imageUrl } : {}),
+  }
 }
 
 export function getBusinessShops() {
   return listRecords(COLLECTION, parseBusinessShop)
 }
 
-export function getBusinessShop(id: string) {
-  return getRecord(COLLECTION, id, parseBusinessShop)
-}
-
-export function createBusinessShop(input: { name: string }) {
-  const name = input.name.trim()
-  if (!name) throw new Error('Business name is required.')
-  return createRecord(COLLECTION, { name })
-}
-
-export function updateBusinessShop(id: string, input: Partial<{ name: string }>) {
-  const updates: Partial<{ name: string }> = input.name === undefined
-    ? {}
-    : { name: input.name.trim() }
-  if (updates.name !== undefined && !updates.name) throw new Error('Business name is required.')
-  return updateRecord(COLLECTION, id, updates)
-}
-
-export function deleteBusinessShop(id: string) {
-  return deleteRecord(COLLECTION, id)
-}

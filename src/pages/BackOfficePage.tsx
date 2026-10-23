@@ -1,4 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { getDownloadURL, ref } from 'firebase/storage'
+import { storage } from '../lib/firebase'
 import { observeAdminAuth, signInAdmin, signOutAdmin } from '../services/adminAuthService'
 import {
   createUnavailability,
@@ -8,6 +10,7 @@ import {
   type UnavailabilityRecord,
 } from '../services/backOfficeService'
 import { createBookableResource } from '../services/resourceService'
+import { getBusinessShops } from '../services/businessShopService'
 import type { BookableResource } from '../types/booking'
 import type { BusinessShop } from '../types/firestore'
 
@@ -71,6 +74,7 @@ function firestoreError(error: unknown) {
 export function BackOfficePage() {
   const [authState, setAuthState] = useState<'checking' | 'signed-out' | 'not-admin' | 'admin'>('checking')
   const [authError, setAuthError] = useState<string | null>(null)
+  const [adminName, setAdminName] = useState('')
   const [data, setData] = useState<BackOfficeData | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -82,11 +86,43 @@ export function BackOfficePage() {
   const [barberError, setBarberError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'reservations' | 'barbers' | 'blocking'>('reservations')
   const [reservationBarberFilter, setReservationBarberFilter] = useState('')
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null)
   const timeZone = import.meta.env.VITE_BUSINESS_TIME_ZONE || 'Europe/Lisbon'
   const [today] = useState(() => dateInTimeZone(new Date(), timeZone))
   const [reservationDate, setReservationDate] = useState(today)
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadBackground() {
+      try {
+        const businesses = await getBusinessShops()
+        const pathSegments = window.location.pathname.split('/').filter(Boolean)
+        const routeSlug = (pathSegments.at(-1) === 'admin' ? pathSegments.at(-2) : pathSegments.at(-1)) ?? ''
+        const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+        const business = businesses.find((candidate) =>
+          (candidate.slug && normalize(candidate.slug) === normalize(routeSlug)) ||
+          normalize(candidate.name) === normalize(routeSlug),
+        ) ?? (businesses.length === 1 ? businesses[0] : undefined)
+        if (!business?.imageUrl) return
+
+        const imageUrl = business.imageUrl.startsWith('gs://')
+          ? await getDownloadURL(ref(storage, business.imageUrl))
+          : business.imageUrl
+        if (!cancelled) setBackgroundImageUrl(imageUrl)
+      } catch (error) {
+        console.error('Could not load the back office background image.', error)
+      }
+    }
+
+    void loadBackground()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   useEffect(() => observeAdminAuth((user, isAdmin) => {
+    setAdminName(user?.displayName?.trim() || user?.email?.split('@')[0] || '')
     setAuthState(!user ? 'signed-out' : isAdmin ? 'admin' : 'not-admin')
   }, (error) => {
     setAuthError(error.message)
@@ -128,7 +164,8 @@ export function BackOfficePage() {
     setAuthError(null)
     const form = new FormData(event.currentTarget)
     try {
-      await signInAdmin(String(form.get('email') ?? ''), String(form.get('password') ?? ''))
+      const user = await signInAdmin(String(form.get('email') ?? ''), String(form.get('password') ?? ''))
+      setAdminName(user.displayName?.trim() || user.email?.split('@')[0] || '')
       setAuthState('admin')
     } catch (error) {
       setAuthError(firestoreError(error))
@@ -170,9 +207,17 @@ export function BackOfficePage() {
     const form = new FormData(formElement)
     try {
       setIsSavingBarber(true)
+      const businesses = data?.businesses ?? []
+      const ringBarberShop = businesses.find((business) =>
+        business.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 'ringbarbershop',
+      ) ?? (businesses.length === 1 ? businesses[0] : undefined)
+      if (!ringBarberShop) {
+        setBarberError('Could not find Ring Barber Shop. Confirm its business name in Firestore.')
+        return
+      }
       await createBookableResource({
         name: String(form.get('name') ?? ''),
-        BusinessId: String(form.get('BusinessId') ?? ''),
+        BusinessId: ringBarberShop.id,
       })
       formElement.reset()
       setBarberMessage('Barber added successfully.')
@@ -197,19 +242,14 @@ export function BackOfficePage() {
       : formatSelectedDate(reservationDate)
 
   return (
-    <main className="backoffice-shell">
-      <header className="site-header">
-        <a className="brand" href="/" aria-label="Simple Booking home">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span>SIMPLE<span className="brand-subtitle">BACK OFFICE</span></span>
-        </a>
-        <a className="text-button" href="/ringbarbershop">← Customer booking</a>
-      </header>
-
-      <div className="backoffice-content">
-        <p className="eyebrow">STAFF AREA · {timeZone}</p>
-        <h1>Back office</h1>
-
+    <main
+      className="backoffice-shell"
+      style={backgroundImageUrl
+        ? { '--backoffice-image': `url("${backgroundImageUrl}")` } as CSSProperties
+        : undefined}
+    >
+      <div className="backoffice-panel">
+        <div className="backoffice-content">
         {authState === 'checking' && <p role="status">Checking administrator access…</p>}
         {authState === 'signed-out' && (
           <section className="backoffice-card">
@@ -232,8 +272,8 @@ export function BackOfficePage() {
         )}
         {authState === 'admin' && (
           <>
+            <p className="backoffice-greeting">Hello, {adminName || 'there'}</p>
             <div className="backoffice-toolbar">
-              <p>Signed in as administrator</p>
               <div>
                 <button className="backoffice-button" type="button" onClick={() => void loadData()} disabled={isLoading}>
                   {isLoading ? 'Refreshing…' : 'Refresh'}
@@ -354,17 +394,9 @@ export function BackOfficePage() {
                   ))}
                 </div>
                 <h3 className="backoffice-subheading">Add a barber</h3>
-                {data?.businesses.length === 0 && <p className="form-error">Create a business before adding a barber.</p>}
+                {data?.businesses.length === 0 && <p className="form-error">Ring Barber Shop is not configured.</p>}
                 <form className="customer-form" onSubmit={handleCreateBarber}>
                   <label>Barber name<input name="name" type="text" required maxLength={120} /></label>
-                  <label>Business
-                    <select name="BusinessId" required defaultValue="">
-                      <option value="" disabled>Select a business</option>
-                      {data?.businesses.map((business) => (
-                        <option value={business.id} key={business.id}>{business.name}</option>
-                      ))}
-                    </select>
-                  </label>
                   {barberError && <p className="form-error" role="alert">{barberError}</p>}
                   {barberMessage && <p className="success-message" role="status">{barberMessage}</p>}
                   <button className="submit-booking" type="submit" disabled={isSavingBarber || !data?.businesses.length}>
@@ -431,6 +463,7 @@ export function BackOfficePage() {
             )}
           </>
         )}
+        </div>
       </div>
     </main>
   )

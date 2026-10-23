@@ -33,6 +33,7 @@ function parseBooking(id: string, value: unknown): Booking {
     endAt: optionalString(data, 'endAt', path),
     customerEmail: optionalString(data, 'customerEmail', path),
     customerPhone: optionalString(data, 'customerPhone', path),
+    resourceEmail: optionalString(data, 'resourceEmail', path),
   }
 }
 
@@ -121,6 +122,7 @@ export function validateCustomerDetails(name: string, email: string, phone: stri
 
 export async function createConfirmedBooking(input: {
   resourceId: string
+  resourceEmail?: string
   BusinessId: string
   customerName: string
   customerEmail: string
@@ -130,6 +132,7 @@ export async function createConfirmedBooking(input: {
 }) {
   const booking: BookingInput = {
     resourceId: input.resourceId.trim(),
+    ...(input.resourceEmail?.trim() ? { resourceEmail: input.resourceEmail.trim() } : {}),
     durationMinutes: '60',
     BusinessId: input.BusinessId.trim(),
     customerName: input.customerName.trim(),

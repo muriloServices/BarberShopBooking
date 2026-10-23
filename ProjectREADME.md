@@ -18,13 +18,20 @@ inconsistent.
 
 ### `BusinessShop`
 
-The export contains a document with a `name` (`Ring Barber Shop`).
+The export contains a document with a `name` (`Ring Barber Shop`), a `slug`,
+and an `imageUrl` pointing to the shop's Firebase Storage image.
 
 ```ts
 type BusinessShop = {
   name: string;
+  slug?: string;
+  imageUrl?: string;
 };
 ```
+
+The booking page uses `imageUrl` as the background for the appointment
+calendar and booking panel. `gs://` Storage paths are resolved to download
+URLs in the browser, so the image must be readable by public visitors.
 
 ### `BusinessHours`
 
@@ -198,6 +205,9 @@ The default business timezone is `Europe/Lisbon`. Override it with
 date in the business timezone blocks that barber. Invalid exception records
 are ignored with a warning. If the configured timezone is invalid, the app
 falls back to UTC date boundaries and displays a warning.
+The booking calendar reads `BusinessHours.closedDays` for the matched business
+and disables those weekdays before a customer can select a date; if business
+hours cannot be loaded, date selection stays disabled.
 The booking horizon is not defined, so the calendar does not impose an invented
 maximum date. The calendar uses the business timezone to determine today and
 prevent selecting past dates.

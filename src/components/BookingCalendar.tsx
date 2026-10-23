@@ -2,11 +2,14 @@ type BookingCalendarProps = {
   today: string
   visibleMonth: Date
   canGoBack: boolean
+  closedDays: number[] | null
+  workingDaysError: string | null
   onChangeMonth: (offset: number) => void
   onChooseDate: (date: string) => void
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const SUNDAY_FIRST_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -31,6 +34,8 @@ export function BookingCalendar({
   today,
   visibleMonth,
   canGoBack,
+  closedDays,
+  workingDaysError,
   onChangeMonth,
   onChooseDate,
 }: BookingCalendarProps) {
@@ -80,26 +85,41 @@ export function BookingCalendar({
           if (!date) return <span className="calendar-blank" aria-hidden="true" key={`blank-${index}`} />
           const isPast = date < today
           const isToday = date === today
+          const dayOfWeek = new Date(`${date}T12:00:00.000Z`).getUTCDay()
+          const isClosed = closedDays === null || closedDays.includes(dayOfWeek)
+          const unavailable = isPast || isClosed
           return (
             <button
               type="button"
-              className={`date-cell ${isToday ? 'date-today' : ''}`}
+              className={`date-cell ${isToday ? 'date-today' : ''} ${isClosed && closedDays !== null ? 'date-closed' : ''}`}
               key={date}
-              disabled={isPast}
-              aria-label={`${formatDate(date)}${isPast ? ', unavailable' : ''}`}
-              aria-disabled={isPast}
+              disabled={unavailable}
+              aria-label={`${formatDate(date)}${isPast ? ', unavailable' : isClosed && closedDays !== null ? ', shop closed' : ''}`}
+              aria-disabled={unavailable}
               onClick={() => onChooseDate(date)}
             >
               <span>{Number(date.slice(-2))}</span>
-              {isToday && <span className="today-dot" aria-hidden="true" />}
+              {isToday && !isClosed && <span className="today-dot" aria-hidden="true" />}
             </button>
           )
         })}
       </div>
       <div className="calendar-footer">
-        <span className="legend-dot" aria-hidden="true" />
-        <span>Today</span>
-        <p>Availability is checked after you choose a date.</p>
+        {workingDaysError ? (
+          <p role="alert">{workingDaysError}</p>
+        ) : closedDays === null ? (
+          <p role="status">Loading shop working days…</p>
+        ) : (
+          <>
+            <span className="legend-dot" aria-hidden="true" />
+            <span>Today</span>
+            <p>
+              Closed: {closedDays.length
+                ? closedDays.map((day) => SUNDAY_FIRST_WEEKDAYS[day]).join(', ')
+                : 'none'}.
+            </p>
+          </>
+        )}
       </div>
     </section>
   )
