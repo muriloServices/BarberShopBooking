@@ -3,6 +3,7 @@ export type BookableResource = {
   name: string
   BusinessId?: string
   type: string
+  emailResource?: string
   active: boolean
 }
 
@@ -10,6 +11,7 @@ export type Barber = {
   id: string
   name: string
   BusinessId?: string
+  emailResource?: string
 }
 
 export type DateAvailability = {

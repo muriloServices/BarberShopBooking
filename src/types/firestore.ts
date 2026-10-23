@@ -17,6 +17,7 @@ export type BookableResource = {
   BusinessId?: string
   type: string
   active: boolean
+  emailResource?: string
 }
 
 export type Booking = {
