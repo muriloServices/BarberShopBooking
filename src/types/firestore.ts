@@ -17,6 +17,7 @@ export type BookableResource = {
   BusinessId?: string
   type: string
   active: boolean
+  emailResource?: string
 }
 
 export type Booking = {
@@ -29,6 +30,7 @@ export type Booking = {
   endAt?: string
   customerEmail?: string
   customerPhone?: string
+  resourceEmail?: string
 }
 
 export type AvailabilityException = {

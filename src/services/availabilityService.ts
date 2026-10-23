@@ -142,6 +142,7 @@ export async function getDateAvailability(date: string, timeZone?: string): Prom
           id: resource.id,
           name: resource.name,
           ...(resource.BusinessId ? { BusinessId: resource.BusinessId } : {}),
+          ...(resource.emailResource ? { emailResource: resource.emailResource } : {}),
         })
       }
     }
