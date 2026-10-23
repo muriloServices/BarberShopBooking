@@ -1,4 +1,6 @@
 import type { BusinessShop } from '../types/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { firestore } from '../lib/firebase'
 import {
   asFirestoreRecord,
   listRecords,
@@ -30,3 +32,16 @@ export function getBusinessShops() {
   return listRecords(COLLECTION, parseBusinessShop)
 }
 
+export async function getBusinessShopBySlug(slug: string) {
+  const snapshot = await getDocs(query(
+    collection(firestore, COLLECTION),
+    where('slug', '==', slug),
+  ))
+  const matches = snapshot.docs.map((document) =>
+    parseBusinessShop(document.id, document.data()),
+  )
+  if (matches.length > 1) {
+    throw new Error(`More than one ${COLLECTION} document uses the slug "${slug}".`)
+  }
+  return matches[0] ?? null
+}
