@@ -30,6 +30,7 @@ export type Booking = {
   endAt?: string
   customerEmail?: string
   customerPhone?: string
+  resourceEmail?: string
 }
 
 export type AvailabilityException = {

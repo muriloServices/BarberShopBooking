@@ -7,6 +7,7 @@ type CustomerDetailsFormProps = {
   date: string
   barberName: string
   resourceId: string
+  resourceEmail?: string
   businessId?: string
   timeZone: string
   slot: TimeSlot
@@ -28,6 +29,7 @@ export function CustomerDetailsForm({
   date,
   barberName,
   resourceId,
+  resourceEmail,
   businessId,
   timeZone,
   slot,
@@ -53,13 +55,16 @@ export function CustomerDetailsForm({
       validateCustomerDetails(customerName, customerEmail, customerPhone)
       const availability = await getTimeSlotAvailability(date, resourceId, timeZone)
       if (availability.status !== 'available') {
-        throw new Error(availability.message || 'Could not check this appointment time.')
+        setError(availability.message || 'Could not check this appointment time.')
+        return
       }
       if (!availability.slots.some((candidate) => candidate.startAt === slot.startAt && candidate.available)) {
-        throw new Error('That time is no longer available. Please choose another time.')
+        setError('That time is no longer available. Please choose another time.')
+        return
       }
       const id = await createConfirmedBooking({
         resourceId,
+        resourceEmail,
         BusinessId: businessId,
         customerName,
         customerEmail,
@@ -101,7 +106,6 @@ export function CustomerDetailsForm({
         {bookingId ? (
           <div className="success-message" role="status">
             <h3>Booking confirmed</h3>
-            <p>Your booking reference is {bookingId}.</p>
           </div>
         ) : (
         <form className="customer-form" onSubmit={handleSubmit}>

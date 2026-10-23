@@ -93,12 +93,16 @@ service cloud.firestore {
           'customerEmail',
           'customerPhone',
           'startAt',
-          'endAt'
+          'endAt',
+          'resourceEmail'
         ])
         && data.resourceId is string
         && data.resourceId.size() > 0
         && exists(/databases/$(database)/documents/BookableResource/$(data.resourceId))
         && get(/databases/$(database)/documents/BookableResource/$(data.resourceId)).data.BusinessId == data.BusinessId
+        && (!('resourceEmail' in data)
+          || (data.resourceEmail is string
+            && data.resourceEmail == get(/databases/$(database)/documents/BookableResource/$(data.resourceId)).data.emailResource))
         && data.BusinessId is string
         && businessExists(data.BusinessId)
         && data.durationMinutes == '60'
