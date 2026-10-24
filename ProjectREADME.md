@@ -18,6 +18,7 @@ inconsistent.
 
 ### `BusinessShop`
 
+
 The export contains a document with a `name` (`Ring Barber Shop`), a `slug`,
 and an `imageUrl` pointing to the shop's Firebase Storage image.
 
