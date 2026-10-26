@@ -1,0 +1,36 @@
+name: Delete merged branches
+
+on:
+  pull_request:
+    types: [ closed ]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  delete-branch:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete merged branch
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+          BASE_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$BASE_REPO" != "$REPO" ]; then
+            echo "Skipping branch from a fork."
+            exit 0
+          fi
+          
+          if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "develop" ]; then
+            echo "Protected branch: $BRANCH. Skipping deletion."
+            exit 0
+          fi
+          
+          gh api \
+            --method DELETE \
+            "repos/$REPO/git/refs/heads/$BRANCH"
