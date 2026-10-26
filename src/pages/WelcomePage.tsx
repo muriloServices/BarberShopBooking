@@ -1,3 +1,5 @@
+import './WelcomePage.css'
+
 export function WelcomePage() {
   return (
     <main className="welcome-shell">

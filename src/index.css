@@ -5,9 +5,9 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-optical-sizing: auto;
-  font-weight: 400;
-  color: #373931;
-  background: #f8f7f4;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
 * {
@@ -15,12 +15,12 @@
 }
 
 html {
-  min-width: 320px;
+  min-width: var(--min-viewport-width);
   min-height: 100%;
 }
 
 body {
-  min-width: 320px;
+  min-width: var(--min-viewport-width);
   min-height: 100vh;
   margin: 0;
 }
@@ -30,6 +30,6 @@ button {
 }
 
 ::selection {
-  background: #e7ddc8;
-  color: #292c26;
+  background: var(--color-selection);
+  color: var(--color-heading);
 }
