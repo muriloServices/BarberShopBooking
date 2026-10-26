@@ -1,0 +1,14 @@
+name: Branch naming
+on:
+  pull_request:
+    branches: [main, develop]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          [[ "$HEAD" =~ ^(feature|bugfix|hotfix|release|renovate)/.+$ || "$HEAD" =~ ^(develop|main)$ ]] || {
+            echo "Branch '$HEAD' must start with feature/, bugfix/, hotfix/ or release/"; exit 1; }
