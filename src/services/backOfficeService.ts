@@ -58,7 +58,7 @@ function toUnavailability(id: string, value: unknown): UnavailabilityRecord {
   }
 }
 
-export async function getBackOfficeData() {
+export async function getBackOfficeData(businessId: string) {
   const [bookings, unavailability, resourceResult, businesses] = await Promise.all([
     getBookings(),
     getAvailabilityExceptions(),
@@ -68,16 +68,22 @@ export async function getBackOfficeData() {
 
   return {
     reservations: bookings
+      .filter((booking) => booking.BusinessId === businessId)
       .map((booking) => toReservation(booking.id, booking))
       .sort((left, right) => right.startAt.localeCompare(left.startAt)),
-    unavailability: unavailability.map((record) => toUnavailability(record.id, record)),
-    resources: resourceResult.resources.filter((resource) => resource.type === 'BARBER' && resource.active),
-    businesses,
+    unavailability: unavailability
+      .filter((record) => record.BusinessId === businessId)
+      .map((record) => toUnavailability(record.id, record)),
+    resources: resourceResult.resources.filter((resource) =>
+      resource.BusinessId === businessId && resource.type === 'BARBER' && resource.active,
+    ),
+    businesses: businesses.filter((business) => business.id === businessId),
   }
 }
 
 export async function createUnavailability(input: {
   resourceId: string
+  businessId: string
   startDate: string
   startTime: string
   endDate: string
@@ -86,8 +92,8 @@ export async function createUnavailability(input: {
   timeZone: string
 }) {
   const resource = await getBookableResource(input.resourceId)
-  if (!resource?.BusinessId) {
-    throw new Error('The selected barber must be linked to a business before adding unavailability.')
+  if (resource?.BusinessId !== input.businessId) {
+    throw new Error('The selected barber does not belong to this business.')
   }
   const start = businessDateTimeToEpoch(input.startDate, input.startTime, input.timeZone)
   const end = businessDateTimeToEpoch(input.endDate, input.endTime, input.timeZone)
@@ -99,7 +105,7 @@ export async function createUnavailability(input: {
     endAt: new Date(end).toISOString(),
     resourceId: input.resourceId,
     reason: input.reason.trim(),
-    BusinessId: resource.BusinessId,
+    BusinessId: input.businessId,
   })
 }
 
