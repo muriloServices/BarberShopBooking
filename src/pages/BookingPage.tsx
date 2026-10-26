@@ -2,14 +2,20 @@ import './BookingPage.css'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { getDownloadURL, ref } from 'firebase/storage'
 import { BarberSelection } from '../components/BarberSelection'
+import { BusinessLoading } from '../components/BusinessLoading'
+import { BusinessNotFound } from '../components/BusinessNotFound'
 import { BookingCalendar } from '../components/BookingCalendar'
 import { CustomerDetailsForm } from '../components/CustomerDetailsForm'
 import { TimeSlotSelection } from '../components/TimeSlotSelection'
 import { getDateAvailability } from '../services/availabilityService'
-import { getBusinessShops } from '../services/businessShopService'
+import { getBusinessShopBySlug } from '../services/businessShopService'
 import { getBusinessHoursRecords } from '../services/businessHoursService'
 import { storage } from '../lib/firebase'
 import type { DateAvailability, TimeSlot } from '../types/booking'
+
+type BookingPageProps = {
+  businessSlug: string
+}
 
 function dateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
@@ -35,7 +41,7 @@ function todayKey(timeZone?: string) {
   return dateKey(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
-export function BookingPage() {
+export function BookingPage({ businessSlug }: BookingPageProps) {
   const timeZone = import.meta.env.VITE_BUSINESS_TIME_ZONE || 'Europe/Lisbon'
   const today = todayKey(timeZone)
   const [todayYear, todayMonth] = today.split('-').map(Number)
@@ -49,83 +55,106 @@ export function BookingPage() {
   })
   const canGoBack = visibleMonth.getTime() > Date.UTC(todayYear, todayMonth - 1, 1)
   const [availability, setAvailability] = useState<DateAvailability | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false)
   const [bookingImageUrl, setBookingImageUrl] = useState<string | null>(null)
+  const [businessName, setBusinessName] = useState<string | null>(null)
+  const [businessId, setBusinessId] = useState<string | null>(null)
+  const [loadedBusinessSlug, setLoadedBusinessSlug] = useState<string | null>(null)
+  const isLoadingData = loadedBusinessSlug !== businessSlug
+  const [businessLoadError, setBusinessLoadError] = useState<string | null>(null)
   const [closedDays, setClosedDays] = useState<number[] | null>(null)
   const [workingDaysError, setWorkingDaysError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadBusinessDetails() {
+    async function resolveBusiness() {
       try {
-        const businesses = await getBusinessShops()
-        const routeSlug = window.location.pathname.split('/').filter(Boolean).at(-1)?.toLowerCase() ?? ''
-        const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
-        const business = businesses.find((candidate) =>
-          (candidate.slug && normalize(candidate.slug) === normalize(routeSlug)) ||
-          normalize(candidate.name) === normalize(routeSlug),
-        ) ?? (businesses.length === 1 ? businesses[0] : undefined)
+        const businessPromise = getBusinessShopBySlug(businessSlug)
+        const hoursPromise = getBusinessHoursRecords()
+        const imagePromise = businessPromise.then((business) => {
+          if (!business?.imageUrl) return null
+          return business.imageUrl.startsWith('gs://')
+            ? getDownloadURL(ref(storage, business.imageUrl))
+            : business.imageUrl
+        })
+        const [businessResult, hoursResult, imageResult] = await Promise.allSettled([
+          businessPromise,
+          hoursPromise,
+          imagePromise,
+        ])
+        if (cancelled) return
 
+        if (businessResult.status === 'rejected') {
+          setBusinessId(null)
+          setBusinessName(null)
+          setBookingImageUrl(null)
+          setClosedDays(null)
+          setWorkingDaysError(null)
+          setBusinessLoadError(`Could not check whether business "${businessSlug}" exists. Please try again.`)
+          console.error('Could not resolve the business slug.', businessResult.reason)
+          return
+        }
+        const business = businessResult.value
         if (!business) {
-          if (!cancelled) {
-            setWorkingDaysError('Could not identify this shop. Date selection is unavailable.')
-          }
-          console.error('Could not identify the business for this booking page.')
+          setBusinessId(null)
+          setBusinessName(null)
+          setBookingImageUrl(null)
+          setClosedDays(null)
+          setWorkingDaysError(null)
+          setBusinessLoadError(null)
           return
         }
 
-        if (business.imageUrl) {
-          try {
-            const imageUrl = business.imageUrl.startsWith('gs://')
-              ? await getDownloadURL(ref(storage, business.imageUrl))
-              : business.imageUrl
-            if (!cancelled) setBookingImageUrl(imageUrl)
-          } catch (error) {
-            console.error('Could not load the business booking background image.', error)
-          }
+        setBusinessId(business.id)
+        setBusinessName(business.name)
+        setBusinessLoadError(null)
+        if (imageResult.status === 'fulfilled') {
+          setBookingImageUrl(imageResult.value)
         } else {
-          console.warn(`BusinessShop/${business.id} has no imageUrl configured.`)
+          setBookingImageUrl(null)
+          console.error('Could not load the business booking background image.', imageResult.reason)
         }
 
-        try {
-          const hours = await getBusinessHoursRecords()
-          const businessHours = hours.find((record) => record.businessShopId === business.id)
-          if (!businessHours) {
-            if (!cancelled) {
-              setWorkingDaysError(`Business hours are not configured for ${business.name}.`)
-            }
-            console.error(`Business hours are not configured for ${business.name}.`)
-            return
-          }
-          if (!cancelled) {
+        if (hoursResult.status === 'fulfilled') {
+          const businessHours = hoursResult.value.find((record) => record.businessShopId === business.id)
+          if (businessHours) {
             setClosedDays(businessHours.closedDays)
             setWorkingDaysError(null)
+          } else {
+            setClosedDays(null)
+            setWorkingDaysError(`Business hours are not configured for ${business.name}.`)
           }
-        } catch (error) {
-          if (!cancelled) {
-            setWorkingDaysError('Could not load shop working days. Date selection is unavailable.')
-          }
-          console.error('Could not load business working days.', error)
+        } else {
+          setClosedDays(null)
+          setWorkingDaysError('Could not load shop working days. Date selection is unavailable.')
+          console.error('Could not load business working days.', hoursResult.reason)
         }
       } catch (error) {
         if (!cancelled) {
-          setWorkingDaysError('Could not load shop working days. Date selection is unavailable.')
+          setBusinessId(null)
+          setBusinessName(null)
+          setBookingImageUrl(null)
+          setClosedDays(null)
+          setWorkingDaysError(null)
+          setBusinessLoadError(`Could not check whether business "${businessSlug}" exists. Please try again.`)
         }
-        console.error('Could not load business booking details.', error)
+        console.error('Could not resolve the business slug.', error)
+      } finally {
+        if (!cancelled) setLoadedBusinessSlug(businessSlug)
       }
     }
 
-    void loadBusinessDetails()
+    void resolveBusiness()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [businessSlug])
 
   useEffect(() => {
-    if (!selectedDate) return
+    if (!selectedDate || !businessId) return
     let cancelled = false
-    getDateAvailability(selectedDate, timeZone)
+    getDateAvailability(selectedDate, businessId, timeZone)
       .then((result) => {
         if (!cancelled) setAvailability(result)
       })
@@ -139,13 +168,13 @@ export function BookingPage() {
         }
       })
       .finally(() => {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled) setIsLoadingAvailability(false)
       })
 
     return () => {
       cancelled = true
     }
-  }, [selectedDate, timeZone])
+  }, [selectedDate, businessId, timeZone])
 
   function chooseDate(date: string) {
     if (
@@ -153,7 +182,7 @@ export function BookingPage() {
       closedDays === null ||
       closedDays.includes(new Date(`${date}T12:00:00.000Z`).getUTCDay())
     ) return
-    setIsLoading(true)
+    setIsLoadingAvailability(true)
     setAvailability(null)
     setSelectedBarberId(null)
     setSelectedSlot(null)
@@ -164,7 +193,7 @@ export function BookingPage() {
   function showCalendar() {
     setSelectedDate(null)
     setAvailability(null)
-    setIsLoading(false)
+    setIsLoadingAvailability(false)
     setSelectedBarberId(null)
     setSelectedSlot(null)
     setFlowStep('date')
@@ -176,6 +205,16 @@ export function BookingPage() {
     : flowStep === 'barber' ? 2
       : flowStep === 'time' ? 3
         : 4
+
+  if (isLoadingData) {
+    return <BusinessLoading />
+  }
+  if (businessLoadError) {
+    return <main className="booking-shell"><p role="alert">{businessLoadError}</p></main>
+  }
+  if (!businessId) {
+    return <BusinessNotFound businessSlug={businessSlug} />
+  }
 
   return (
     <main
@@ -220,7 +259,7 @@ export function BookingPage() {
           <BarberSelection
             date={selectedDate}
             availability={availability}
-            isLoading={isLoading}
+            isLoading={isLoadingAvailability}
             selectedBarberId={selectedBarberId}
             onChangeDate={showCalendar}
             onSelectBarber={(id) => {
@@ -259,7 +298,7 @@ export function BookingPage() {
         </div>
 
         <footer className="site-footer">
-          <span>Simple Booking · Ring Barber Shop</span>
+          <span>Simple Booking · {businessName ?? 'Booking'}</span>
         </footer>
       </div>
     </main>

@@ -58,7 +58,11 @@ function parseException(value: unknown): AvailabilityException | null {
  * A resource is selectable unless a valid, resource-matched exception overlaps
  * the selected business day. This does not confirm that a time slot is free.
  */
-export async function getDateAvailability(date: string, timeZone?: string): Promise<DateAvailability> {
+export async function getDateAvailability(
+  date: string,
+  businessId: string,
+  timeZone?: string,
+): Promise<DateAvailability> {
   try {
     const [resourceResult, exceptionSnapshot] = await Promise.all([
       getBookableResources(),
@@ -74,7 +78,11 @@ export async function getDateAvailability(date: string, timeZone?: string): Prom
     }
 
     const resources = resourceResult.resources
-      .filter((resource) => resource.type === 'BARBER' && resource.active)
+      .filter((resource) =>
+        resource.BusinessId === businessId &&
+        resource.type === 'BARBER' &&
+        resource.active,
+      )
     const exceptionsByResource = new Map<string, Array<{ start: number; end: number }>>()
     const malformedExceptions: string[] = []
 
