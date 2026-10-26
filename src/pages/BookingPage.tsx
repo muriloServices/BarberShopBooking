@@ -1,3 +1,4 @@
+import './BookingPage.css'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { getDownloadURL, ref } from 'firebase/storage'
 import { BarberSelection } from '../components/BarberSelection'

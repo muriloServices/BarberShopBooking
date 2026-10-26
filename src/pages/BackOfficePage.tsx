@@ -1,3 +1,4 @@
+import './BackOfficePage.css'
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { getDownloadURL, ref } from 'firebase/storage'
 import { storage } from '../lib/firebase'
