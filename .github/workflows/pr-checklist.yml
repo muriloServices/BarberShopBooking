@@ -1,0 +1,29 @@
+name: PR checklist
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main, develop]
+jobs:
+  checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a type of change and all requirements ticked
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          failed=0
+
+          types=$(printf '%s\n' "$BODY" | sed -n '/^### Types of changes/,/^### Please check/p' | grep -cE '^\s*- \[[xX]\]' || true)
+          if [ "$types" -lt 1 ]; then
+            echo "Select at least one type of change."
+            failed=1
+          fi
+
+          unchecked=$(printf '%s\n' "$BODY" | sed -n '/Please check if the PR fulfills these requirements/,/^### Evidence/p' | grep -E '^\s*- \[ \]' || true)
+          if [ -n "$unchecked" ]; then
+            echo "Unticked checklist items:"
+            echo "$unchecked"
+            failed=1
+          fi
+
+          exit $failed
