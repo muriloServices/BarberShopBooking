@@ -1,0 +1,126 @@
+/* Design tokens shared across all pages. */
+:root {
+  /* Spacing */
+  --unit: 4px;
+  --space-0: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 96px;
+
+  /* Colors */
+  --color-accent: #a28c62;
+  --color-primary: #8b744b;
+  --color-primary-hover: #705b37;
+  --color-focus: #91794f;
+  --color-text: #373931;
+  --color-heading: #292c26;
+  --color-title: #30322c;
+  --color-text-muted: #74766e;
+  --color-text-soft: #77776e;
+  --color-text-label: #55564e;
+  --color-text-faint: #9b9a92;
+  --color-text-disabled: #aaa9a2;
+  --color-text-hint: #85857d;
+  --color-text-body: #696a62;
+  --color-accent-dark: #6f6044;
+  --color-surface: #fff;
+  --color-bg: #f8f7f4;
+  --color-surface-hover: #fcfbf7;
+  --color-surface-disabled: #f1f0ec;
+  --color-border: #e9e6df;
+  --color-border-strong: #d9d6ce;
+  --color-border-soft: #eeece6;
+  --color-border-muted: #ece9e2;
+  --color-brand-border: #b3a17c;
+  --color-brand-mark: #a18653;
+  --color-success: #336b43;
+  --color-error: #a32020;
+  --color-selection: #e7ddc8;
+  --color-surface-translucent: rgba(255, 255, 255, 0.96);
+  --color-surface-tint: rgba(239, 236, 227, 0.42);
+  --color-accent-subtle: rgba(162, 140, 98, 0.28);
+  --color-accent-strong: rgba(162, 140, 98, 0.54);
+  --color-glow: rgba(197, 182, 146, 0.18);
+  --shadow-card: 0 18px 55px rgba(48, 43, 32, 0.055);
+
+  /* Effects and typography */
+  --overlay-light: rgba(255, 255, 255, 0.05);
+  --color-panel-border: rgba(233, 230, 223, 0.92);
+  --shadow-panel: 0 22px 70px rgba(30, 28, 23, 0.2);
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --transition-fast: 150ms ease;
+
+  /* Font sizes */
+  --font-size-3xs: 8px;
+  --font-size-2xs: 9px;
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-md: 12px;
+  --font-size-md-plus: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 17px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 19px;
+  --font-size-4xl: 20px;
+  --font-size-5xl: 22px;
+  --font-size-6xl: 23px;
+  --font-size-7xl: 26px;
+  --font-size-8xl: 32px;
+  --font-size-9xl: 36px;
+  --font-size-10xl: 38px;
+
+  /* Font weights */
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+
+  /* Shape and components */
+  --radius-round: 50%;
+  --focus-ring: 2px solid var(--color-focus);
+  --control-height: 43px;
+  --opacity-disabled: 0.65;
+
+  /* Responsive font sizes */
+  --font-size-display: clamp(52px, 7.7vw, 88px);
+  --font-size-display-sm: clamp(51px, 14vw, 70px);
+  --font-size-title: clamp(35px, 6vw, 46px);
+  --font-size-art: clamp(28px, 4vw, 46px);
+
+  /* Responsive spacing */
+  --shell-padding-booking: clamp(var(--space-3), 4vh, var(--space-6));
+  --shell-padding-backoffice: clamp(var(--space-4), 5vh, var(--space-7));
+  --gutter-header: clamp(18px, 4vw, 38px);
+  --gutter-welcome: clamp(22px, 6.2vw, 96px);
+
+  /* Letter spacing */
+  --tracking-subtle: 0.2px;
+  --tracking-wide: 1.5px;
+  --tracking-wider: 2px;
+  --tracking-tight: -0.2px;
+  --tracking-tighter: -1.5px;
+  --tracking-display-sm: -2px;
+  --tracking-display: -3px;
+
+  /* Line heights */
+  --line-height-tight: 1.1;
+  --line-height-snug: 1.3;
+  --line-height-normal: 1.4;
+  --line-height-body: 1.6;
+  --line-height-relaxed: 1.8;
+
+  /* Borders, motion, misc */
+  --border-width: 1px;
+  --border-width-thick: 2px;
+  --duration-spin: 700ms;
+  --duration-reduced: 0.01ms;
+  --glow-radius: 29rem;
+  --min-viewport-width: 320px;
+}
