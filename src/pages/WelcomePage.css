@@ -13,16 +13,17 @@
   height: calc(var(--unit) * 20.5);
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--gutter-welcome);
+  padding: var(--space-4) var(--space-5);
   border-bottom: var(--border-width) solid var(--color-border);
 }
+
 
 .welcome-brand {
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
   color: var(--color-heading);
-  font-family: var(--font-serif);
+  font-family: var(--font-serif,"Georgia");
   font-size: var(--font-size-3xl);
   text-decoration: none;
 }
@@ -37,20 +38,7 @@
   font-size: var(--font-size-6xl);
 }
 
-.welcome-hero {
-  display: grid;
-  width: min(100% - var(--space-7), calc(var(--unit) * 275));
-  flex: 1;
-  grid-template-columns: 1fr 0.9fr;
-  align-items: center;
-  gap: var(--space-7);
-  margin: 0 auto;
-  padding: var(--space-8) 0 var(--space-9);
-}
 
-.welcome-copy {
-  padding: var(--space-4) 0;
-}
 
 .welcome-eyebrow {
   display: flex;
@@ -69,51 +57,6 @@
   background: var(--color-accent);
 }
 
-.welcome-copy h1 {
-  margin: 0;
-  color: var(--color-heading);
-  font-family: var(--font-serif);
-  font-size: var(--font-size-display);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: var(--tracking-display);
-  line-height: var(--line-height-tight);
-}
-
-.welcome-copy h1 span {
-  color: var(--color-accent);
-  font-style: italic;
-}
-
-.welcome-description {
-  max-width: calc(var(--unit) * 105);
-  margin: var(--space-5) 0 var(--space-5);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-relaxed);
-}
-
-.welcome-cta {
-  display: inline-flex;
-  min-height: var(--space-7);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-5);
-  margin-top: var(--space-4);
-  padding: 0 var(--space-4);
-  border: var(--border-width) solid var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-surface);
-  font-family: inherit;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: none;
-  transition: background var(--transition-fast);
-}
-
-.welcome-cta:hover {
-  background: var(--color-primary-hover);
-}
-
 .welcome-contact-number {
   display: block;
   width: fit-content;
@@ -127,12 +70,6 @@
 .welcome-contact-number:hover {
   text-decoration: underline;
   text-underline-offset: calc(var(--unit) * 1);
-}
-
-.welcome-note {
-  margin: var(--space-3) 0 0;
-  color: var(--color-text-faint);
-  font-size: var(--font-size-xs);
 }
 
 .welcome-art {
@@ -155,11 +92,6 @@
 
 .welcome-art-ring-outer {
   transform: translate(calc(var(--unit) * 4.5), calc(var(--unit) * -0.5));
-}
-
-.welcome-art-ring-inner {
-  width: min(24vw, calc(var(--unit) * 65));
-  transform: translate(calc(var(--unit) * -4), var(--space-3));
 }
 
 .welcome-art-label {
@@ -202,29 +134,9 @@
   .welcome-header {
     height: calc(var(--unit) * 17.5);
   }
-
-  .welcome-brand {
-    font-size: var(--font-size-xl);
-  }
-
-  .welcome-hero {
-    width: min(100% - calc(var(--unit) * 9), calc(var(--unit) * 110));
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-    padding: var(--space-7) 0 var(--space-7);
-  }
-
-  .welcome-copy h1 {
-    font-size: var(--font-size-display-sm);
-    letter-spacing: var(--tracking-display-sm);
-  }
-
+  
   .welcome-art {
     min-height: calc(var(--unit) * 65);
-  }
-
-  .welcome-art-ring {
-    width: calc(var(--unit) * 57.5);
   }
 
   .welcome-art-ring-inner {
@@ -239,3 +151,191 @@
     gap: var(--space-3);
     font-size: var(--font-size-2xs);
   }}
+
+  {/*Confirmar main nav*/}
+  .main-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    margin-left: auto;
+  }
+
+.header-inner {
+  width: 100%;
+  max-width: calc(var(--unit) * 300);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  color: var(--color-heading);
+}
+
+.nav-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--space-1);
+}
+
+.header-contact {
+   display: inline-flex;
+   align-items: center;
+   gap: var(--space-5);
+   padding: var(--space-3) var(--space-4);
+   border: var(--border-width) solid var(--color-border-strong);
+   border-radius: var(--space-3);
+   color: var(--color-text);
+   font-size: var(--font-size-md-plus);
+   text-decoration: none;
+ }
+
+.header-contact:hover {
+  background: var(--color-surface-hover);
+}
+
+.header-contact::after {
+  content: "↗";
+}
+
+.welcome-hero {
+  display: grid;
+  width: min(100% - var(--space-7), calc(var(--unit) * 275));
+  grid-template-columns: 1fr 0.9fr;
+  align-items: center;
+  gap: var(--space-7);
+  margin: 0 auto;
+  padding: var(--space-8) 0 var(--space-9);
+}
+
+.welcome-copy {
+  padding: var(--space-4) 0;
+}
+
+.welcome-copy h1 {
+  margin: 0;
+  color: var(--color-heading);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--line-height-tight);
+}
+
+.welcome-copy h1 span {
+  color: var(--color-accent);
+  font-style: italic;
+}
+
+.welcome-description {
+  max-width: calc(var(--unit) * 105);
+  margin: var(--space-5) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+}
+
+.welcome-cta {
+  display: inline-flex;
+  min-height: var(--space-7);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+  padding: 0 var(--space-4);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--space-3);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-family: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.welcome-cta:hover {
+  background: var(--color-primary-hover);
+}
+
+.welcome-note {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-faint);
+  font-size: var(--font-size-xs);
+}
+
+/*phone*/
+.welcome-device {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-phone {
+  position: relative;
+  width: min(100%, calc(var(--unit) * 125));
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  border: var(--border-width) solid var(--color-accent-subtle);
+  border-radius: var(--space-5);
+  background: var(--color-selection);
+  box-shadow: var(--shadow-card);
+}
+
+.welcome-phone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  padding: 0 var(--space-0);
+  color: var(--color-accent-dark);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+.welcome-phone-pill {
+  width: calc(var(--unit) * 25);
+  height: var(--space-3);
+  border-radius: var(--space-5);
+  background: var(--color-accent);
+}
+
+.welcome-phone-body {
+  height: calc(var(--unit) * 82);
+  margin-top: var(--space-4);
+  border-radius: var(--space-4);
+  overflow: hidden;
+  background: var(--color-surface-tint);
+}
+
+.welcome-phone-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.welcome-brand {
+  gap: var(--space-3);
+  color: var(--color-heading);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-3xl);
+}
+
+.welcome-brand-logo {
+  display: block;
+  height: var(--space-6);
+  width: auto;
+}
