@@ -13,7 +13,7 @@ function goToSection(id: string) {
 
 export function WelcomePageHeader() {
     return (
-        <header className="site-header welcome-header">
+        <header className="site-header">
             <div className="header-inner">
 
                 <a className="brand" href="/" aria-label="Simple Booking home">

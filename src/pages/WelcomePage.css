@@ -10,14 +10,6 @@
 }
 
 /* HEADER ----------------------------------------------------------------*/
-.welcome-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  height: calc(var(--unit) * 20.5);
-  padding: var(--space-4) var(--space-5);
-  background: var(--color-bg);
-}
 
 .header-inner {
   width: 100%;
@@ -548,9 +540,6 @@
 
 /* RESPONSIVE (no fim, para vencer as regras acima) ----------------------*/
 @media (max-width: 560px) {
-  .welcome-header {
-    height: calc(var(--unit) * 17.5);
-  }
 
   .welcome-art {
     min-height: calc(var(--unit) * 65);

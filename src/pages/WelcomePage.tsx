@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import './WelcomePage.css'
+import '../styles/shared.css'
 import devices from "../assets/devices.jpg";
 import { WelcomePageFooter } from "../components/WelcomePageFooter";
 import { WelcomePageHeader } from "../components/WelcomePageHeader";
@@ -80,7 +81,7 @@ export function WelcomePage() {
                         Gere melhor o teu tempo.<br />
                         <span>Nós tratamos disso.</span>
                     </h1>
-                    <p className="welcome-description">
+                    <p className="header-note">
                         Começa a transformar as tuas ideias em realidade.
                     </p>
                     <a className="welcome-cta" href="tel:919260780">
@@ -172,14 +173,14 @@ export function WelcomePage() {
 
             {/*PROCESSO------------------------------------------------------------------------------------*/}
 
-            <section id="processo" className="services process" aria-labelledby="process-title">
+            <section id="processo" className="services process" aria-labelledby="services-title">
                 <div className="services-top">
                     <span className="services-label">Processo</span>
                 </div>
 
                 <div className="services-head">
                     <div>
-                        <h2 id="process-title" className="services-title">
+                        <h2 id="services-title" className="services-title">
                             Conhece mais sobre o nosso <em>processo</em>.
                         </h2>
                     </div>
