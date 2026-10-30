@@ -6,6 +6,10 @@
   height: calc(var(--unit) * 20.5);
   padding: 0 var(--gutter-header);
   display: flex;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  position: sticky;
   align-items: center;
   justify-content: space-between;
   border-bottom: var(--border-width) solid var(--color-border);
